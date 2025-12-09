@@ -1,0 +1,8 @@
+# Docker Compose Override for DEV Environment - Worker
+# Workers connect to main server's Docker network (same machine)
+
+networks:
+  worker-network:
+    # DEV: Connect to main server's network (same machine)
+    external: true
+    name: airflow-test-01_airflow-network

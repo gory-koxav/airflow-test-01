@@ -1,0 +1,15 @@
+# Docker Compose Override for PROD Environment - Worker
+# Workers use their own network and connect to main server via IP
+
+networks:
+  worker-network:
+    # PROD: Use separate bridge network (different machines)
+    driver: bridge
+
+services:
+  airflow-worker:
+    # Add main server to /etc/hosts for easier reference
+    extra_hosts:
+      - "main-server:${MAIN_SERVER_IP:-10.0.0.1}"
+      - "postgres:${POSTGRES_HOST:-10.0.0.1}"
+      - "redis:${REDIS_HOST:-10.0.0.1}"

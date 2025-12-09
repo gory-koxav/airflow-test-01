@@ -11,8 +11,13 @@ wheels/
 
 .claude
 
+# env
 .env
 .env.local
 .env.production
 
 logs
+data
+scripts
+legacy_scripts
+legacy_reference

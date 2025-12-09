@@ -237,9 +237,7 @@ services:
 
 networks:
   worker-network:
-    # [DEVELOPMENT] Connect to main server's network when on same machine
-    external: true
-    name: airflow-test-01_airflow-network
-    # [PRODUCTION-CHANGE] When deploying to separate servers, use separate network:
-    # worker-network:
-    #   driver: bridge
+    # Network configuration is defined in override files:
+    # - DEV:  docker-compose_worker.dev.yaml  (external network, same machine)
+    # - PROD: docker-compose_worker.prod.yaml (bridge network, separate machines)
+    driver: bridge
