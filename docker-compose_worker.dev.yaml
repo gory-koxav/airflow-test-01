@@ -1,8 +1,17 @@
 # Docker Compose Override for DEV Environment - Worker
 # Workers connect to main server's Docker network (same machine)
+#
+# Shared Storage (DEV):
+# - Uses local ./data folder from project directory
+# - All containers (main + workers) share the same ./data folder
+# - HOST_DATA_PATH=./data is set in env/dev/worker.env
 
 networks:
   worker-network:
     # DEV: Connect to main server's network (same machine)
     external: true
     name: airflow-test-01_airflow-network
+
+# DEV environment uses default volume configuration from docker-compose_worker.yaml
+# which mounts ${HOST_DATA_PATH:-./data}:/opt/airflow/data
+# Since HOST_DATA_PATH=./data in dev env, this becomes ./data:/opt/airflow/data

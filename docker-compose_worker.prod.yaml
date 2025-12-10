@@ -1,5 +1,17 @@
 # Docker Compose Override for PROD Environment - Worker
 # Workers use their own network and connect to main server via IP
+#
+# Shared Storage (PROD):
+# - Uses NFS mount from dedicated file server
+# - NFS must be mounted on host BEFORE starting containers
+# - HOST_DATA_PATH=/mnt/airflow-data is set in env/prod/worker.env
+#
+# NFS Setup (run on each worker host):
+#   sudo mkdir -p /mnt/airflow-data
+#   sudo mount -t nfs 10.150.150.10:/exports/airflow-data /mnt/airflow-data
+#
+# Or add to /etc/fstab for persistent mount:
+#   10.150.150.10:/exports/airflow-data /mnt/airflow-data nfs defaults,_netdev 0 0
 
 networks:
   worker-network:
@@ -13,3 +25,10 @@ services:
       - "main-server:${MAIN_SERVER_IP:-10.0.0.1}"
       - "postgres:${POSTGRES_HOST:-10.0.0.1}"
       - "redis:${REDIS_HOST:-10.0.0.1}"
+      # Add NFS file server for reference (optional)
+      - "nfs-server:${NFS_SERVER_IP:-10.150.150.10}"
+
+# PROD environment uses volume configuration from docker-compose_worker.yaml
+# which mounts ${HOST_DATA_PATH:-./data}:/opt/airflow/data
+# Since HOST_DATA_PATH=/mnt/airflow-data in prod env, this becomes:
+# /mnt/airflow-data:/opt/airflow/data (NFS mount)

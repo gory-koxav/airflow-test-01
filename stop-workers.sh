@@ -1,10 +1,23 @@
 #!/bin/bash
 # Stop all Airflow Workers
-# Usage: ./stop-workers.sh [worker_count]
+# Usage: ./stop-workers.sh [dev|prod] [worker_count]
+# Example: ./stop-workers.sh dev 4
 
-WORKER_COUNT=${1:-10}
+ENV=${1:-dev}
+WORKER_COUNT=${2:-10}
 
-echo "Stopping Airflow Workers..."
+echo "============================================"
+echo "Stopping Airflow Workers"
+echo "Environment: $ENV"
+echo "============================================"
+
+# Validate environment
+if [[ "$ENV" != "dev" && "$ENV" != "prod" ]]; then
+    echo "Error: Invalid environment. Use 'dev' or 'prod'"
+    exit 1
+fi
+
+OVERRIDE_FILE="docker-compose_worker.${ENV}.yaml"
 
 for i in $(seq 1 $WORKER_COUNT); do
     PROJECT_NAME="airflow-worker-${i}"
@@ -14,22 +27,24 @@ for i in $(seq 1 $WORKER_COUNT); do
     if docker ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
         echo "Stopping $PROJECT_NAME..."
 
-        # Try docker compose down (suppress warnings, check if container still exists after)
+        # Try docker compose down with specified environment
         docker compose --project-name $PROJECT_NAME \
             --file docker-compose_worker.yaml \
-            --file docker-compose_worker.dev.yaml \
+            --file $OVERRIDE_FILE \
             down 2>/dev/null
 
-        # If container still exists, try prod config
+        # If container still exists, try the other environment config
         if docker ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+            OTHER_ENV=$([[ "$ENV" == "dev" ]] && echo "prod" || echo "dev")
             docker compose --project-name $PROJECT_NAME \
                 --file docker-compose_worker.yaml \
-                --file docker-compose_worker.prod.yaml \
+                --file docker-compose_worker.${OTHER_ENV}.yaml \
                 down 2>/dev/null
         fi
 
         # If container still exists, force remove
         if docker ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+            echo "  Force removing $CONTAINER_NAME..."
             docker stop $CONTAINER_NAME 2>/dev/null
             docker rm $CONTAINER_NAME 2>/dev/null
         fi

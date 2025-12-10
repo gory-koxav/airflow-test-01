@@ -51,9 +51,15 @@ for i in $(seq 1 $WORKER_COUNT); do
         continue
     fi
 
+    # Extract worker info from env file
+    WORKER_NAME=$(grep "^WORKER_NAME=" "$WORKER_ENV" | cut -d'=' -f2)
+    WORKER_QUEUES=$(grep "^WORKER_QUEUES=" "$WORKER_ENV" | cut -d'=' -f2)
+
     echo ""
     echo "Starting Worker $i..."
     echo "  Env file: $WORKER_ENV"
+    echo "  Name: $WORKER_NAME"
+    echo "  Queues: $WORKER_QUEUES"
 
     CMD="docker compose --project-name airflow-worker-${i}"
     CMD="$CMD --file $COMPOSE_FILE"
@@ -80,6 +86,20 @@ echo ""
 echo "============================================"
 echo "Workers started successfully!"
 echo "============================================"
+echo ""
+echo "Worker Queue Mapping:"
+for i in $(seq 1 $WORKER_COUNT); do
+    if [[ $i -eq 1 ]]; then
+        WORKER_ENV="env/${ENV}/worker.env"
+    else
+        WORKER_ENV="env/${ENV}/worker${i}.env"
+    fi
+    if [[ -f "$WORKER_ENV" ]]; then
+        WORKER_NAME=$(grep "^WORKER_NAME=" "$WORKER_ENV" | cut -d'=' -f2)
+        WORKER_QUEUES=$(grep "^WORKER_QUEUES=" "$WORKER_ENV" | cut -d'=' -f2)
+        echo "  Worker $i: $WORKER_NAME -> $WORKER_QUEUES"
+    fi
+done
 echo ""
 echo "Useful commands:"
 echo "  View logs:    docker logs airflow-worker-1-airflow-worker-1"

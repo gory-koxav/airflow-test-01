@@ -1,16 +1,26 @@
 #!/bin/bash
 # Stop Airflow Main Server
-# Usage: ./stop-main.sh [profile]
-# Example: ./stop-main.sh flower
+# Usage: ./stop-main.sh [dev|prod] [profile]
+# Example: ./stop-main.sh dev flower
 
-PROFILE=${1:-}
+ENV=${1:-dev}
+PROFILE=${2:-}
 
-echo "Stopping Airflow Main Server..."
+echo "============================================"
+echo "Stopping Airflow Main Server"
+echo "Environment: $ENV"
+echo "============================================"
+
+# Validate environment
+if [[ "$ENV" != "dev" && "$ENV" != "prod" ]]; then
+    echo "Error: Invalid environment. Use 'dev' or 'prod'"
+    exit 1
+fi
 
 # Build command
 CMD="docker compose --file docker-compose_main.yaml"
 CMD="$CMD --env-file env/base.env"
-CMD="$CMD --env-file env/dev/main.env"
+CMD="$CMD --env-file env/${ENV}/main.env"
 
 if [[ -n "$PROFILE" ]]; then
     CMD="$CMD --profile $PROFILE"
@@ -19,6 +29,8 @@ fi
 
 CMD="$CMD down"
 
+echo ""
+echo "Running: $CMD"
 eval $CMD 2>/dev/null
 
 echo ""

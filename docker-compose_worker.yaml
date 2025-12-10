@@ -81,6 +81,11 @@ x-airflow-worker:
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins:ro
     # Config volume - read-only for workers
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config:ro
+    # Shared storage for observation/fusion/tracking data
+    # DEV: HOST_DATA_PATH=./data (local project folder)
+    # PROD: HOST_DATA_PATH=/mnt/airflow-data (NFS mount)
+    # Workers need read-write access to shared storage
+    - ${HOST_DATA_PATH:-./data}:/opt/airflow/data
 
   user: "${AIRFLOW_UID:-50000}:0"
 
@@ -101,9 +106,12 @@ services:
     # Set hostname to WORKER_NAME for better identification in Flower
     hostname: ${WORKER_NAME}
     # Airflow 3.x uses 'airflow celery worker' command
-    # --hostname helps identify workers in monitoring tools (Flower)
-    # [PRODUCTION-NOTE] Important for distinguishing multiple workers
-    command: celery worker
+    # --queues: specifies which queue(s) this worker will consume
+    # --hostname: helps identify workers in monitoring tools (Flower)
+    # [IMPORTANT] WORKER_QUEUES determines which tasks this worker handles
+    #   - Observer workers: obs_{bay_id} (e.g., obs_3bay_north)
+    #   - Processor workers: proc_{bay_id} (e.g., proc_3bay_north)
+    command: celery worker --queues ${WORKER_QUEUES:-default}
     healthcheck:
       test:
         - "CMD-SHELL"
