@@ -30,6 +30,11 @@ x-airflow-worker:
     # Core configuration
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    # Execution API Server URL - Required for Airflow 3.x workers
+    # [DEVELOPMENT] Workers connect to apiserver via Docker network
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-apiserver:8080/execution/"
+    # [PRODUCTION-CHANGE] Use main server IP when deploying to separate servers
+    # AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://${MAIN_SERVER_IP}:8080/execution/"
 
     # Database connection to main server
     # [DEVELOPMENT] Using container hostnames when on same machine
@@ -81,6 +86,8 @@ x-airflow-worker:
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins:ro
     # Config volume - read-only for workers
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config:ro
+    # Source code volume - read-only for workers
+    - ${AIRFLOW_PROJ_DIR:-.}/src:/opt/airflow/src:ro
     # Shared storage for observation/fusion/tracking data
     # DEV: HOST_DATA_PATH=./data (local project folder)
     # PROD: HOST_DATA_PATH=/mnt/airflow-data (NFS mount)
