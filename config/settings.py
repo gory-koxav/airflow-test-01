@@ -131,11 +131,11 @@ class ModelSetting(BaseModel):
     sam: SamSetting = Field(default_factory=SamSetting)
     pipeline: List[PipelineItem] = Field(
         default=[
-            PipelineItem(name="YOLOObjectDetector", module="observation.inference.strategies"),
-            PipelineItem(name="AutomaticSegmenter", module="observation.inference.strategies"),
-            PipelineItem(name="MaskClassifier", module="observation.inference.strategies"),
+            PipelineItem(name="YOLOObjectDetector", module="src.observation.inference.strategies"),
+            PipelineItem(name="AutomaticSegmenter", module="src.observation.inference.strategies"),
+            PipelineItem(name="MaskClassifier", module="src.observation.inference.strategies"),
             PipelineItem(
-                name="SAMObjectBoundarySegmenter", module="observation.inference.strategies"
+                name="SAMObjectBoundarySegmenter", module="src.observation.inference.strategies"
             ),
         ]
     )

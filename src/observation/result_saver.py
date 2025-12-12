@@ -16,7 +16,6 @@ import gzip
 from datetime import datetime
 
 from .image_provider.base import CapturedImage
-from .inference_service import InferenceResult
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,7 @@ class ResultSaver:
     def save_results(
         self,
         captured_images: List[CapturedImage],
-        inference_results: Dict[str, InferenceResult],
+        inference_results: Dict[str, Dict[str, Any]],
         batch_id: str,
         bay_id: str,
     ) -> SaveResult:
@@ -68,7 +67,9 @@ class ResultSaver:
 
         Args:
             captured_images: 캡처된 이미지 리스트
-            inference_results: 추론 결과 딕셔너리 (image_id -> InferenceResult)
+            inference_results: 추론 결과 딕셔너리 (image_id -> dict)
+                각 값은 InferencePipeline에서 생성된 딕셔너리입니다.
+                예: {"detections": [...], "boundary_masks": [...], ...}
             batch_id: 배치 식별자
             bay_id: Bay 식별자
 
@@ -113,7 +114,7 @@ class ResultSaver:
     def _prepare_save_data(
         self,
         captured_images: List[CapturedImage],
-        inference_results: Dict[str, InferenceResult],
+        inference_results: Dict[str, Dict[str, Any]],
         batch_id: str,
         bay_id: str,
     ) -> Dict[str, Any]:
@@ -130,16 +131,28 @@ class ResultSaver:
             }
 
         # 추론 결과를 딕셔너리로 변환
+        # InferencePipeline에서 반환된 결과는 이미 딕셔너리 형태입니다.
+        # 예: {"detections": [...], "boundary_masks": [...], ...}
         results_data = {}
         for image_id, result in inference_results.items():
+            # camera_name은 captured_images에서 가져옴
+            camera_name = None
+            for img in captured_images:
+                if img.image_id == image_id:
+                    camera_name = img.camera_name
+                    break
+
             results_data[image_id] = {
-                "camera_name": result.camera_name,
-                "detections": result.detections,
-                "boundary_masks": self._serialize_masks(result.boundary_masks),
-                "assembly_classifications": result.assembly_classifications,
-                "pinjig_masks": [m.tolist() if isinstance(m, np.ndarray) else m for m in result.pinjig_masks],
-                "pinjig_classifications": result.pinjig_classifications,
-                "metadata": result.metadata,
+                "camera_name": camera_name,
+                "detections": result.get("detections", []),
+                "boundary_masks": self._serialize_masks(result.get("boundary_masks", [])),
+                "assembly_classifications": result.get("assembly_classifications", []),
+                "pinjig_masks": [
+                    m.tolist() if isinstance(m, np.ndarray) else m
+                    for m in result.get("pinjig_masks", [])
+                ],
+                "pinjig_classifications": result.get("pinjig_classifications", []),
+                "metadata": result.get("metadata", {}),
             }
 
         return {
@@ -151,7 +164,7 @@ class ResultSaver:
             "summary": {
                 "total_images": len(captured_images),
                 "total_detections": sum(
-                    len(r.detections) for r in inference_results.values()
+                    len(r.get("detections", [])) for r in inference_results.values()
                 ),
                 "camera_names": [img.camera_name for img in captured_images],
             },

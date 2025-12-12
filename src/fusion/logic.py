@@ -75,13 +75,18 @@ def run_fusion(
             bay_id=bay_id,
         )
 
+        # 저장 실패 시 예외 발생 (Airflow Task를 실패로 처리하기 위함)
+        if not save_result.success:
+            error_msg = save_result.error_message or "Unknown error during result save"
+            raise RuntimeError(f"Failed to save fusion results: {error_msg}")
+
         logger.info(
             f"[{bay_id}] Fusion completed for batch {batch_id}: "
             f"{len(block_infos)} blocks -> {len(merged_block_infos)} merged blocks"
         )
 
         return FusionRunResult(
-            success=save_result.success,
+            success=True,
             batch_id=batch_id,
             bay_id=bay_id,
             result_path=save_result.pickle_path,
@@ -92,12 +97,5 @@ def run_fusion(
     except Exception as e:
         error_msg = str(e)
         logger.error(f"[{bay_id}] Fusion failed: {error_msg}")
-        return FusionRunResult(
-            success=False,
-            batch_id=batch_id,
-            bay_id=bay_id,
-            result_path="",
-            csv_path="",
-            merged_block_count=0,
-            error_message=error_msg,
-        )
+        # 예외를 다시 발생시켜 Airflow Task를 실패로 처리
+        raise

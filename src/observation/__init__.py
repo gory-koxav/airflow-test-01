@@ -6,7 +6,12 @@ Observation 모듈
 
 Components:
 - image_provider: 이미지 획득 Strategy Pattern 구현
-- inference_service: AI 추론 서비스 (YOLO, SAM, Classification)
+- inference: AI 추론 파이프라인 (Facade + Strategy Pattern)
+    - InferencePipeline: 파이프라인 Facade
+    - YOLOObjectDetector: 객체 탐지
+    - SAMObjectBoundarySegmenter: 경계 분할
+    - AutomaticSegmenter: 핀지그 자동 분할
+    - MaskClassifier: 마스크 분류
 - result_saver: 결과 저장 (Pickle 파일)
 - logic: 순수 비즈니스 로직 함수 (Airflow 독립)
 """
@@ -27,6 +32,14 @@ from .logic import (
     create_image_provider,
     generate_batch_id,
 )
+from .inference import (
+    InferencePipeline,
+    InferenceStrategy,
+    YOLOObjectDetector,
+    SAMObjectBoundarySegmenter,
+    AutomaticSegmenter,
+    MaskClassifier,
+)
 
 __all__ = [
     # Image Provider
@@ -43,4 +56,11 @@ __all__ = [
     "run_inference",
     "create_image_provider",
     "generate_batch_id",
+    # Inference Pipeline
+    "InferencePipeline",
+    "InferenceStrategy",
+    "YOLOObjectDetector",
+    "SAMObjectBoundarySegmenter",
+    "AutomaticSegmenter",
+    "MaskClassifier",
 ]

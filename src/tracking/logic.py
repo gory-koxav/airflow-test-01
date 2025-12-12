@@ -69,6 +69,11 @@ def run_tracking(
         timestamp = datetime.now()
         result = tracking_service.process_timestep(timestamp, batch_id)
 
+        # 처리 실패 시 예외 발생 (Airflow Task를 실패로 처리하기 위함)
+        if not result.get('success', False):
+            error_msg = result.get('error_message', 'Unknown error during tracking')
+            raise RuntimeError(f"Failed to process tracking: {error_msg}")
+
         # 4. 현재 상태 저장
         tracking_service.save_trackers_state()
 
@@ -80,7 +85,7 @@ def run_tracking(
         )
 
         return TrackingRunResult(
-            success=result.get('success', False),
+            success=True,
             batch_id=batch_id,
             bay_id=bay_id,
             matched_count=result.get('matched_count', 0),
@@ -91,12 +96,5 @@ def run_tracking(
     except Exception as e:
         error_msg = str(e)
         logger.error(f"[{bay_id}] Tracking failed: {error_msg}")
-        return TrackingRunResult(
-            success=False,
-            batch_id=batch_id,
-            bay_id=bay_id,
-            matched_count=0,
-            new_count=0,
-            active_trackers=0,
-            error_message=error_msg,
-        )
+        # 예외를 다시 발생시켜 Airflow Task를 실패로 처리
+        raise

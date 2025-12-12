@@ -23,7 +23,6 @@ import traceback
 
 from .image_provider.base import CapturedImage, ImageProvider
 from .image_provider.factory import ImageProviderFactory
-from .inference_service import InferenceService, InferenceResult
 from .result_saver import ResultSaver, SaveResult
 
 logger = logging.getLogger(__name__)
@@ -139,14 +138,8 @@ def capture_images(
         logger.error(f"[{bay_id}] ========== Capture FAILED ==========")
         logger.error(f"[{bay_id}] Error: {error_msg}")
         logger.error(f"[{bay_id}] Stack trace:\n{stack_trace}")
-
-        return CaptureResult(
-            success=False,
-            batch_id=batch_id,
-            bay_id=bay_id,
-            captured_count=0,
-            error_message=error_msg,
-        )
+        # 예외를 다시 발생시켜 Airflow Task를 실패로 처리
+        raise
 
 
 def check_execution_conditions(
@@ -219,25 +212,35 @@ def run_inference(
     bay_id: str,
     batch_id: str,
     captured_images_metadata: List[Dict[str, Any]],
-    models: Dict[str, str],
+    models: Dict[str, str] = None,
     base_path: str = "/opt/airflow/data",
+    pipeline_config: List[Dict[str, Any]] = None,
 ) -> InferenceRunResult:
     """
     AI 추론 및 결과 저장 로직 (순수 함수)
+
+    InferencePipeline (Facade)을 사용하여 전체 AI 추론 파이프라인을 실행합니다.
+    파이프라인 순서:
+    1. YOLOObjectDetector - 객체 탐지
+    2. AutomaticSegmenter - 핀지그 자동 분할
+    3. MaskClassifier - 분할된 마스크 분류
+    4. SAMObjectBoundarySegmenter - 객체 경계 분할
 
     Args:
         bay_id: Bay 식별자
         batch_id: 배치 ID
         captured_images_metadata: 캡처된 이미지 메타데이터 리스트
-        models: 모델 경로 딕셔너리
+        models: 모델 경로 딕셔너리 (deprecated, pipeline_config 사용 권장)
         base_path: 데이터 저장 기본 경로
+        pipeline_config: 파이프라인 설정 (None이면 config.settings 사용)
 
     Returns:
         InferenceRunResult: 추론 결과
     """
     import cv2
     from datetime import datetime as dt
-    from .image_provider.base import CapturedImage
+    from .models import CapturedImage
+    from .inference import InferencePipeline
 
     if not captured_images_metadata:
         logger.error(f"[{bay_id}] No captured images metadata available")
@@ -286,14 +289,9 @@ def run_inference(
     logger.info(f"[{bay_id}] Starting inference for batch {batch_id}")
 
     try:
-        # 1. AI 추론
-        inference_service = InferenceService(
-            yolo_model_path=models.get('yolo_detection'),
-            sam_model_path=models.get('sam_segmentation'),
-            sam_yolo_cls_model_path=models.get('sam_yolo_cls'),
-            assembly_cls_model_path=models.get('assembly_cls'),
-        )
-        inference_results = inference_service.run_inference(captured_images)
+        # 1. AI 추론 (InferencePipeline Facade 사용)
+        pipeline = InferencePipeline(pipeline_config=pipeline_config)
+        inference_results = pipeline.process_batch(captured_images)
 
         # 2. 결과 저장 (공유 스토리지에 Pickle 저장)
         result_saver = ResultSaver(base_path=base_path)
@@ -304,10 +302,15 @@ def run_inference(
             bay_id=bay_id,
         )
 
+        # 저장 실패 시 예외 발생 (Airflow Task를 실패로 처리하기 위함)
+        if not save_result.success:
+            error_msg = save_result.error_message or "Unknown error during result save"
+            raise RuntimeError(f"Failed to save inference results: {error_msg}")
+
         logger.info(f"[{bay_id}] Inference completed, results saved to {save_result.result_path}")
 
         return InferenceRunResult(
-            success=save_result.success,
+            success=True,
             batch_id=batch_id,
             bay_id=bay_id,
             result_path=save_result.result_path,
@@ -316,15 +319,11 @@ def run_inference(
 
     except Exception as e:
         error_msg = str(e)
+        stack_trace = traceback.format_exc()
         logger.error(f"[{bay_id}] Inference failed: {error_msg}")
-        return InferenceRunResult(
-            success=False,
-            batch_id=batch_id,
-            bay_id=bay_id,
-            result_path="",
-            processed_count=0,
-            error_message=error_msg,
-        )
+        logger.error(f"[{bay_id}] Stack trace:\n{stack_trace}")
+        # 예외를 다시 발생시켜 Airflow Task를 실패로 처리
+        raise
 
 
 def create_image_provider(

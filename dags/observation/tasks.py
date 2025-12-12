@@ -102,29 +102,23 @@ def run_inference_task(
 
     실행 위치: Bay 물리 서버의 Observer
 
-    모델 경로는 config.settings.PathSetting에서 자동으로 로드됩니다.
+    InferencePipeline (Facade)을 사용하여 전체 AI 추론 파이프라인을 실행합니다.
+    파이프라인 순서 (config/settings.py에서 설정):
+    1. YOLOObjectDetector - 객체 탐지
+    2. AutomaticSegmenter - 핀지그 자동 분할
+    3. MaskClassifier - 분할된 마스크 분류
+    4. SAMObjectBoundarySegmenter - 객체 경계 분할
     """
     from src.observation import run_inference
-    from config.settings import get_setting
 
     batch_id = capture_result['batch_id']
     captured_images_metadata = capture_result.get('captured_images_metadata', [])
 
-    # 설정에서 모델 경로 로드
-    setting = get_setting()
-    models = {
-        "yolo_detection": str(setting.path.yolo_od_ckpt),
-        "sam_segmentation": str(setting.path.sam_ckpt),
-        "sam_yolo_cls": str(setting.path.yolo_cls_ckpt),
-        "assembly_cls": str(setting.path.yolo_asbl_ckpt),
-    }
-
-    # 순수 로직 호출
+    # 순수 로직 호출 (pipeline_config=None이면 config.settings에서 자동 로드)
     result = run_inference(
         bay_id=bay_id,
         batch_id=batch_id,
         captured_images_metadata=captured_images_metadata,
-        models=models,
     )
 
     return {
