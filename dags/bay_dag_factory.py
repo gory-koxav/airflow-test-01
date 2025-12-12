@@ -15,8 +15,8 @@ Bay별 전체 파이프라인 DAG Factory
 """
 
 from airflow import DAG
-from airflow.operators.python import ShortCircuitOperator, PythonOperator
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.providers.standard.operators.python import ShortCircuitOperator, PythonOperator
+from airflow.providers.standard.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime, timedelta
 from typing import Dict, Any
 import sys
@@ -30,6 +30,7 @@ from config.bay_configs import (
     get_observer_queue,
     get_processor_queue,
     get_enabled_bays,
+    get_image_provider_config,
 )
 
 logger = logging.getLogger(__name__)
@@ -120,15 +121,27 @@ def run_capture_task(
                 logger.info(
                     f"[{bay_id}] Captured image: camera={img.camera_name}, "
                     f"shape={img.image_data.shape if img.image_data is not None else 'None'}, "
+                    f"source_path={img.source_path}, "
                     f"captured_at={img.captured_at}"
                 )
         else:
             logger.warning(f"[{bay_id}] No images captured! Check camera configuration and image paths.")
 
         # 3. 캡처 결과를 XCom에 저장 (다음 Task에서 사용)
-        # Note: 이미지 데이터는 직렬화 문제로 XCom에 직접 저장하지 않음
-        # 대신 captured_images 객체를 임시 저장하고 참조만 전달
-        context['ti'].xcom_push(key='captured_images', value=captured_images)
+        # Note: numpy array는 XCom 직렬화가 불가능하므로 이미지 메타정보만 저장
+        # 이미지 파일 경로(source_path)를 통해 다음 Task에서 이미지를 다시 로드
+        captured_images_metadata = [
+            {
+                'image_id': img.image_id,
+                'camera_name': img.camera_name,
+                'bay_id': img.bay_id,
+                'source_path': img.source_path,
+                'captured_at': img.captured_at.isoformat(),
+                'metadata': img.metadata,
+            }
+            for img in captured_images
+        ]
+        context['ti'].xcom_push(key='captured_images_metadata', value=captured_images_metadata)
 
         logger.info(f"[{bay_id}] ========== Image capture completed ==========")
 
@@ -204,6 +217,9 @@ def run_inference_task(bay_id: str, models: dict, **context) -> dict:
 
     실행 위치: Bay 물리 서버의 Observer
     """
+    import cv2
+    from datetime import datetime as dt
+    from src.observation.image_provider.base import CapturedImage
     from src.observation.inference_service import InferenceService
     from src.observation.result_saver import ResultSaver
 
@@ -211,18 +227,51 @@ def run_inference_task(bay_id: str, models: dict, **context) -> dict:
     capture_result = context['ti'].xcom_pull(task_ids='capture_images')
     batch_id = capture_result['batch_id']
 
-    # XCom에서 captured_images 가져오기
-    captured_images = context['ti'].xcom_pull(task_ids='capture_images', key='captured_images')
+    # XCom에서 captured_images_metadata 가져오기 (이미지 파일 경로 정보)
+    captured_images_metadata = context['ti'].xcom_pull(
+        task_ids='capture_images', key='captured_images_metadata'
+    )
 
-    if not captured_images:
-        logger.error(f"[{bay_id}] No captured images available")
+    if not captured_images_metadata:
+        logger.error(f"[{bay_id}] No captured images metadata available")
         return {
             'success': False,
             'batch_id': batch_id,
             'bay_id': bay_id,
-            'error_message': 'No captured images available',
+            'error_message': 'No captured images metadata available',
         }
 
+    # 메타데이터에서 이미지 파일을 로드하여 CapturedImage 객체 재구성
+    captured_images = []
+    for meta in captured_images_metadata:
+        source_path = meta['source_path']
+        image_data = cv2.imread(source_path)
+
+        if image_data is None:
+            logger.error(f"[{bay_id}] Failed to load image from {source_path}")
+            continue
+
+        captured_image = CapturedImage(
+            image_id=meta['image_id'],
+            camera_name=meta['camera_name'],
+            bay_id=meta['bay_id'],
+            image_data=image_data,
+            captured_at=dt.fromisoformat(meta['captured_at']),
+            source_path=source_path,
+            metadata=meta.get('metadata', {}),
+        )
+        captured_images.append(captured_image)
+
+    if not captured_images:
+        logger.error(f"[{bay_id}] No images could be loaded from metadata")
+        return {
+            'success': False,
+            'batch_id': batch_id,
+            'bay_id': bay_id,
+            'error_message': 'No images could be loaded from metadata',
+        }
+
+    logger.info(f"[{bay_id}] Loaded {len(captured_images)} images for inference")
     logger.info(f"[{bay_id}] Starting inference for batch {batch_id}")
 
     try:
@@ -256,12 +305,7 @@ def run_inference_task(bay_id: str, models: dict, **context) -> dict:
 
     except Exception as e:
         logger.error(f"[{bay_id}] Inference failed: {e}")
-        return {
-            'success': False,
-            'batch_id': batch_id,
-            'bay_id': bay_id,
-            'error_message': str(e),
-        }
+        raise  # Task 실패 → downstream task 실행 안됨, retry 메커니즘 활성화
 
 
 def run_fusion_task(bay_id: str, config: dict, **context) -> dict:
@@ -429,7 +473,7 @@ def create_observation_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
                 "bay_id": bay_id,
                 "cameras": config["cameras"],
                 "image_provider_type": config["image_provider"],
-                "image_provider_config": config.get("image_provider_config", {}),
+                "image_provider_config": get_image_provider_config(bay_id),
             },
             queue=observer_queue,
         )

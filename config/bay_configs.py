@@ -61,48 +61,40 @@ BAY_CONFIGS: Dict[str, Dict[str, Any]] = {
             "tracking": None,  # Trigger 기반
         },
         "operating_hours": [
-            (8, 30, 9, 20),
-            (11, 0, 11, 50),
-            (13, 30, 14, 20),
-            (16, 0, 16, 50),
+            (0, 0, 23, 59),  # 24시간 운영
         ],
-        "skip_times": [
-            (8, 40, 3),
-            (11, 10, 3),
-            (13, 40, 3),
-            (16, 10, 3),
-        ],
+        "skip_times": [],  # 스킵 시간 없음
 
         # === 카메라 설정 ===
         "cameras": [
-            {"name": "C_2", "host": "10.150.160.183", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_4", "host": "10.150.160.184", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_6", "host": "10.150.160.193", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_7", "host": "10.150.160.194", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_9", "host": "10.150.160.209", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_11", "host": "10.150.160.211", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_2", "host": "10.150.160.221", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_4", "host": "10.150.160.222", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_6", "host": "10.150.160.224", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_7", "host": "10.150.160.225", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_9", "host": "10.150.160.226", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_11", "host": "10.150.160.227", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S001R1", "host": "10.150.160.183", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S002R1", "host": "10.150.160.184", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S003R1", "host": "10.150.160.193", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S004R1", "host": "10.150.160.194", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S005R1", "host": "10.150.160.209", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S006R1", "host": "10.150.160.211", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S007R1", "host": "10.150.160.221", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S008R1", "host": "10.150.160.222", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S009R1", "host": "10.150.160.224", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S010R1", "host": "10.150.160.225", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S011R1", "host": "10.150.160.226", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2509S012R1", "host": "10.150.160.227", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
         ],
 
         # === 카메라 외부 파라미터 (Extrinsic Parameters) ===
         "camera_extrinsics": {
-            "C_11": {"column": "C11", "coord": np.array([0, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_9": {"column": "C09", "coord": np.array([56, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_7": {"column": "C07", "coord": np.array([28, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_6": {"column": "C06", "coord": np.array([82, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_4": {"column": "C04", "coord": np.array([106, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_2": {"column": "C02", "coord": np.array([133, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "D_11": {"column": "D11", "coord": np.array([3, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_9": {"column": "D09", "coord": np.array([28, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_7": {"column": "D07", "coord": np.array([56, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_6": {"column": "D06", "coord": np.array([78, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_4": {"column": "D04", "coord": np.array([106, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_2": {"column": "D02", "coord": np.array([133, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2509S001R1": {"column": "C11", "coord": np.array([0, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2509S002R1": {"column": "C09", "coord": np.array([28, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2509S003R1": {"column": "C07", "coord": np.array([56, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2509S004R1": {"column": "C06", "coord": np.array([82, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2509S005R1": {"column": "C04", "coord": np.array([106, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2509S006R1": {"column": "C02", "coord": np.array([133, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2509S007R1": {"column": "D11", "coord": np.array([3, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2509S008R1": {"column": "D09", "coord": np.array([28, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2509S009R1": {"column": "D07", "coord": np.array([56, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2509S010R1": {"column": "D06", "coord": np.array([78, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2509S011R1": {"column": "D04", "coord": np.array([106, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2509S012R1": {"column": "D02", "coord": np.array([133, 0, 25], dtype=float), "pan": 0, "tilt": 50},
         },
 
         # === 이미지 획득 설정 ===
@@ -110,7 +102,7 @@ BAY_CONFIGS: Dict[str, Dict[str, Any]] = {
         # "onvif": 실시간 ONVIF 카메라 캡처 (운영용)
         "image_provider": "file",
         "image_provider_config": {
-            "base_path": f"{NFS_IMAGE_BASE_PATH}/12bay",
+            # base_path는 bay_id로 동적 생성됨: get_image_provider_config(bay_id)
             "time_tolerance_hours": 100000.0,
         },
 
@@ -198,48 +190,40 @@ BAY_CONFIGS: Dict[str, Dict[str, Any]] = {
             "tracking": None,  # Trigger 기반
         },
         "operating_hours": [
-            (8, 30, 9, 20),
-            (11, 0, 11, 50),
-            (13, 30, 14, 20),
-            (16, 0, 16, 50),
+            (0, 0, 23, 59),  # 24시간 운영
         ],
-        "skip_times": [
-            (8, 40, 3),
-            (11, 10, 3),
-            (13, 40, 3),
-            (16, 10, 3),
-        ],
+        "skip_times": [],  # 스킵 시간 없음
 
         # === 카메라 설정 (12bay와 동일한 카메라 구성) ===
         "cameras": [
-            {"name": "C_2", "host": "10.150.161.183", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_4", "host": "10.150.161.184", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_6", "host": "10.150.161.193", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_7", "host": "10.150.161.194", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_9", "host": "10.150.161.209", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "C_11", "host": "10.150.161.211", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_2", "host": "10.150.161.221", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_4", "host": "10.150.161.222", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_6", "host": "10.150.161.224", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_7", "host": "10.150.161.225", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_9", "host": "10.150.161.226", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
-            {"name": "D_11", "host": "10.150.161.227", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2307S012", "host": "10.150.161.183", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S027", "host": "10.150.161.209", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S028", "host": "10.150.161.194", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S029", "host": "10.150.161.193", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S030", "host": "10.150.161.184", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S031", "host": "10.150.161.211", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S032", "host": "10.150.161.221", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S033", "host": "10.150.161.225", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S034", "host": "10.150.161.224", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S035", "host": "10.150.161.222", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S036", "host": "10.150.161.226", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
+            {"name": "NS6130Y2310S037", "host": "10.150.161.227", "port": 80, "username": "admin", "password": CAMERA_PASSWORD},
         ],
 
         # === 카메라 외부 파라미터 (12bay와 동일) ===
         "camera_extrinsics": {
-            "C_11": {"column": "C11", "coord": np.array([0, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_9": {"column": "C09", "coord": np.array([56, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_7": {"column": "C07", "coord": np.array([28, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_6": {"column": "C06", "coord": np.array([82, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_4": {"column": "C04", "coord": np.array([106, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "C_2": {"column": "C02", "coord": np.array([133, 40, 25], dtype=float), "pan": 180, "tilt": 50},
-            "D_11": {"column": "D11", "coord": np.array([3, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_9": {"column": "D09", "coord": np.array([28, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_7": {"column": "D07", "coord": np.array([56, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_6": {"column": "D06", "coord": np.array([78, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_4": {"column": "D04", "coord": np.array([106, 0, 25], dtype=float), "pan": 0, "tilt": 50},
-            "D_2": {"column": "D02", "coord": np.array([133, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2307S012": {"column": "C11", "coord": np.array([0, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2310S027": {"column": "C09", "coord": np.array([28, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2310S028": {"column": "C07", "coord": np.array([56, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2310S029": {"column": "C06", "coord": np.array([82, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2310S030": {"column": "C04", "coord": np.array([106, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2310S031": {"column": "C02", "coord": np.array([133, 40, 25], dtype=float), "pan": 180, "tilt": 50},
+            "NS6130Y2310S032": {"column": "D11", "coord": np.array([3, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2310S033": {"column": "D09", "coord": np.array([28, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2310S034": {"column": "D07", "coord": np.array([56, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2310S035": {"column": "D06", "coord": np.array([78, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2310S036": {"column": "D04", "coord": np.array([106, 0, 25], dtype=float), "pan": 0, "tilt": 50},
+            "NS6130Y2310S037": {"column": "D02", "coord": np.array([133, 0, 25], dtype=float), "pan": 0, "tilt": 50},
         },
 
         # === 이미지 획득 설정 ===
@@ -247,7 +231,7 @@ BAY_CONFIGS: Dict[str, Dict[str, Any]] = {
         # "onvif": 실시간 ONVIF 카메라 캡처 (운영용)
         "image_provider": "file",
         "image_provider_config": {
-            "base_path": f"{NFS_IMAGE_BASE_PATH}/64bay",
+            # base_path는 bay_id로 동적 생성됨: get_image_provider_config(bay_id)
             "time_tolerance_hours": 100000.0,
         },
 
@@ -367,3 +351,11 @@ def get_shared_model_paths() -> Dict[str, str]:
 def get_nfs_image_path(bay_id: str) -> str:
     """Bay별 NFS 이미지 경로 반환"""
     return f"{NFS_IMAGE_BASE_PATH}/{bay_id}"
+
+
+def get_image_provider_config(bay_id: str) -> Dict[str, Any]:
+    """Bay별 image_provider_config 반환 (base_path 동적 생성)"""
+    config = get_bay_config(bay_id)
+    provider_config = config.get("image_provider_config", {}).copy()
+    provider_config["base_path"] = get_nfs_image_path(bay_id)
+    return provider_config

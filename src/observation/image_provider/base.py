@@ -23,6 +23,7 @@ class CapturedImage:
         bay_id: Bay 식별자 (예: "12bay", "64bay")
         image_data: 이미지 데이터 (numpy array, BGR 형식)
         captured_at: 캡처 시간
+        source_path: 이미지 파일 경로 (XCom 직렬화용)
         metadata: 추가 메타데이터 (선택적)
     """
     image_id: str
@@ -30,6 +31,7 @@ class CapturedImage:
     bay_id: str
     image_data: np.ndarray
     captured_at: datetime
+    source_path: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):

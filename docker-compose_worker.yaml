@@ -1,24 +1,26 @@
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
+# =============================================================================
+# Worker Base Configuration (Airflow Distributed Architecture)
+# =============================================================================
 #
-#   http://www.apache.org/licenses/LICENSE-2.0
+# FILE STRUCTURE (layered compose files):
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ docker-compose_worker.yaml      <- THIS FILE (base: services, volumes)  │
+# ├─────────────────────────────────────────────────────────────────────────┤
+# │ docker-compose_worker.dev.yaml  <- DEV:  external network (same host)   │
+# │ docker-compose_worker.prod.yaml <- PROD: bridge network + extra_hosts   │
+# ├─────────────────────────────────────────────────────────────────────────┤
+# │ docker-compose_worker.gpu.yaml  <- GPU:  NVIDIA GPU (if WORKER_GPU=true)│
+# └─────────────────────────────────────────────────────────────────────────┘
 #
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
+# USAGE (handled by start-workers.sh):
+#   ./start-workers.sh dev          # base + dev
+#   ./start-workers.sh prod         # base + prod
+#   (GPU added automatically when WORKER_GPU=true in worker env file)
 #
-
-# Worker Server Configuration for Distributed Airflow Architecture
-# This configuration runs only the Airflow Worker component
-# It connects to the main server's PostgreSQL and Redis instances
+# WORKER ENV FILES (env/{dev,prod}/worker-{type}-{bay}.env):
+#   - worker-obs-64bay.env   (Observer, GPU enabled)
+#   - worker-proc-64bay.env  (Processor, no GPU)
+# =============================================================================
 
 ---
 x-airflow-worker:
@@ -76,6 +78,9 @@ x-airflow-worker:
 
     # Custom config file path
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+
+    # Note: Dependencies are installed directly into Airflow's Python environment
+    # via "uv pip install --system" in Dockerfile, so no venv PATH override needed
 
   volumes:
     # DAGs volume - can be mounted via NFS, synced via Git, or copied manually

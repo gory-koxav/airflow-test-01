@@ -201,33 +201,28 @@ class InferenceService:
         if self._yolo_model is None:
             return []
 
-        try:
-            results = self._yolo_model(
-                image_data,
-                conf=self.yolo_confidence_threshold,
-                device=self.device,
-            )
+        results = self._yolo_model(
+            image_data,
+            conf=self.yolo_confidence_threshold,
+            device=self.device,
+        )
 
-            detections = []
-            for result in results:
-                boxes = result.boxes
-                if boxes is None:
-                    continue
+        detections = []
+        for result in results:
+            boxes = result.boxes
+            if boxes is None:
+                continue
 
-                for i in range(len(boxes)):
-                    detection = {
-                        "bbox": boxes.xyxy[i].cpu().numpy().tolist(),
-                        "confidence": float(boxes.conf[i].cpu()),
-                        "class_id": int(boxes.cls[i].cpu()),
-                        "class_name": result.names[int(boxes.cls[i].cpu())],
-                    }
-                    detections.append(detection)
+            for i in range(len(boxes)):
+                detection = {
+                    "bbox": boxes.xyxy[i].cpu().numpy().tolist(),
+                    "confidence": float(boxes.conf[i].cpu()),
+                    "class_id": int(boxes.cls[i].cpu()),
+                    "class_name": result.names[int(boxes.cls[i].cpu())],
+                }
+                detections.append(detection)
 
-            return detections
-
-        except Exception as e:
-            logger.error(f"YOLO detection failed: {e}")
-            return []
+        return detections
 
     def _run_sam_segmentation(
         self,

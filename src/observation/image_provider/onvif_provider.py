@@ -6,6 +6,7 @@ ONVIF 프로토콜을 사용하여 카메라에서 실시간으로 이미지를 
 """
 
 from datetime import datetime
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 import logging
 import numpy as np
@@ -30,6 +31,7 @@ class OnvifImageProvider(ImageProvider):
         max_retries: int = 3,
         parallel: bool = True,
         max_workers: int = 6,
+        base_save_path: str = "/opt/airflow/data/captured_images",
     ):
         """
         Args:
@@ -37,11 +39,14 @@ class OnvifImageProvider(ImageProvider):
             max_retries: 최대 재시도 횟수
             parallel: 병렬 캡처 활성화 여부
             max_workers: 병렬 캡처 시 최대 워커 수
+            base_save_path: 캡처된 이미지 저장 기본 경로
+                           실제 저장 경로: {base_save_path}/{bay_id}/{camera_name}/{timestamp}.jpg
         """
         self.timeout = timeout
         self.max_retries = max_retries
         self.parallel = parallel
         self.max_workers = max_workers
+        self.base_save_path = base_save_path
 
     def get_images(
         self,
@@ -127,7 +132,8 @@ class OnvifImageProvider(ImageProvider):
     ) -> Optional[CapturedImage]:
         """단일 카메라에서 이미지를 캡처합니다."""
         camera_name = config.get("name", "unknown")
-        image_id = f"{bay_id}_{camera_name}_{reference_time.strftime('%Y%m%d%H%M%S')}"
+        timestamp_str = reference_time.strftime('%Y%m%d%H%M%S')
+        image_id = f"{bay_id}_{camera_name}_{timestamp_str}"
 
         # 설정 검증
         if not self._validate_single_camera_config(config):
@@ -135,48 +141,81 @@ class OnvifImageProvider(ImageProvider):
             return self._create_failure_image(image_id, camera_name, bay_id, reference_time)
 
         # 스냅샷 시도
+        image_data = None
+        capture_method = None
         for attempt in range(1, self.max_retries + 1):
             try:
                 image_data = self._get_snapshot(config)
                 if image_data is not None:
-                    return CapturedImage(
-                        image_id=image_id,
-                        camera_name=camera_name,
-                        bay_id=bay_id,
-                        image_data=image_data,
-                        captured_at=reference_time,
-                        metadata={
-                            "host": config.get("host"),
-                            "port": config.get("port"),
-                            "capture_method": "onvif_snapshot",
-                        },
-                    )
+                    capture_method = "onvif_snapshot"
+                    break
             except Exception as e:
                 logger.warning(
                     f"[{bay_id}] Camera {camera_name} snapshot attempt "
                     f"{attempt}/{self.max_retries} failed: {e}"
                 )
 
-        # 모든 시도 실패 시 RTSP 폴백
-        try:
-            image_data = self._get_rtsp_frame(config)
-            if image_data is not None:
-                return CapturedImage(
-                    image_id=image_id,
-                    camera_name=camera_name,
-                    bay_id=bay_id,
-                    image_data=image_data,
-                    captured_at=reference_time,
-                    metadata={
-                        "host": config.get("host"),
-                        "port": config.get("port"),
-                        "capture_method": "rtsp_fallback",
-                    },
-                )
-        except Exception as e:
-            logger.error(f"[{bay_id}] Camera {camera_name} RTSP fallback failed: {e}")
+        # 모든 스냅샷 시도 실패 시 RTSP 폴백
+        if image_data is None:
+            try:
+                image_data = self._get_rtsp_frame(config)
+                if image_data is not None:
+                    capture_method = "rtsp_fallback"
+            except Exception as e:
+                logger.error(f"[{bay_id}] Camera {camera_name} RTSP fallback failed: {e}")
 
-        return self._create_failure_image(image_id, camera_name, bay_id, reference_time)
+        # 이미지 획득 실패 시 실패 이미지 반환
+        if image_data is None:
+            return self._create_failure_image(image_id, camera_name, bay_id, reference_time)
+
+        # 이미지 파일로 저장
+        save_path = self._save_captured_image(
+            image_data, bay_id, camera_name, timestamp_str
+        )
+
+        return CapturedImage(
+            image_id=image_id,
+            camera_name=camera_name,
+            bay_id=bay_id,
+            image_data=image_data,
+            captured_at=reference_time,
+            source_path=save_path,
+            metadata={
+                "host": config.get("host"),
+                "port": config.get("port"),
+                "capture_method": capture_method,
+            },
+        )
+
+    def _save_captured_image(
+        self,
+        image_data: np.ndarray,
+        bay_id: str,
+        camera_name: str,
+        timestamp_str: str,
+    ) -> str:
+        """
+        캡처된 이미지를 파일로 저장합니다.
+
+        저장 경로: {base_save_path}/{bay_id}/{camera_name}/{timestamp}.jpg
+
+        Args:
+            image_data: 이미지 numpy array
+            bay_id: Bay 식별자
+            camera_name: 카메라 이름
+            timestamp_str: 타임스탬프 문자열 (YYYYMMDDHHMMSS)
+
+        Returns:
+            str: 저장된 이미지 파일 경로
+        """
+        save_dir = Path(self.base_save_path) / bay_id / camera_name
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        file_path = save_dir / f"{timestamp_str}.jpg"
+        cv2.imwrite(str(file_path), image_data)
+
+        logger.debug(f"[{bay_id}] Saved captured image: {file_path}")
+        return str(file_path)
 
     def _get_snapshot(self, config: Dict[str, Any]) -> Optional[np.ndarray]:
         """ONVIF 스냅샷 URI를 통해 이미지 획득"""
@@ -246,7 +285,9 @@ class OnvifImageProvider(ImageProvider):
         bay_id: str,
         reference_time: datetime,
     ) -> CapturedImage:
-        """캡처 실패 시 빈 이미지 생성"""
+        """캡처 실패 시 빈 이미지 생성 및 저장"""
+        timestamp_str = reference_time.strftime('%Y%m%d%H%M%S')
+
         # 1920x1080 검은색 이미지 생성
         failure_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
@@ -261,12 +302,18 @@ class OnvifImageProvider(ImageProvider):
             3,
         )
 
+        # 실패 이미지도 파일로 저장
+        save_path = self._save_captured_image(
+            failure_image, bay_id, camera_name, timestamp_str
+        )
+
         return CapturedImage(
             image_id=image_id,
             camera_name=camera_name,
             bay_id=bay_id,
             image_data=failure_image,
             captured_at=reference_time,
+            source_path=save_path,
             metadata={
                 "capture_method": "failure",
                 "error": "All capture methods failed",

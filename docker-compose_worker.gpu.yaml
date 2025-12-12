@@ -1,0 +1,25 @@
+# =============================================================================
+# GPU Override - Worker (Observer only)
+# =============================================================================
+# Layer: Added automatically when WORKER_GPU=true in worker env file
+#
+# Purpose: NVIDIA GPU access for AI inference (YOLO, SAM, etc.)
+#
+# Requirements:
+#   - NVIDIA GPU on host
+#   - NVIDIA Container Toolkit installed
+#   - Verify: docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
+# =============================================================================
+
+services:
+  airflow-worker:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: ${WORKER_GPU_COUNT:-1}
+              capabilities: [gpu]
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility

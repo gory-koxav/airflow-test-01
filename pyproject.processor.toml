@@ -1,0 +1,19 @@
+[project]
+name = "airflow-processor"
+version = "1.0.0"
+description = "Airflow Processor Worker - Lightweight packages for fusion and tracking"
+requires-python = ">=3.12"
+dependencies = [
+    # Image processing (headless for container)
+    "opencv-python-headless>=4.12.0",
+    "pillow>=12.0.0",
+
+    # Scientific computing
+    "numpy>=2.2.0",
+    "matplotlib>=3.10.0",
+    "polars>=1.36.0",
+    "shapely>=2.1.0",
+
+    # HTTP requests
+    "requests>=2.32.0",
+]

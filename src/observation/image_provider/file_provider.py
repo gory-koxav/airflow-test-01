@@ -39,16 +39,19 @@ class FileImageProvider(ImageProvider):
         base_path: str,
         time_tolerance_hours: float = 1.0,
         file_extensions: Optional[List[str]] = None,
+        filename_filter: Optional[str] = "downimage",
     ):
         """
         Args:
             base_path: 이미지 파일이 저장된 기본 디렉토리 경로
             time_tolerance_hours: 시간 허용 오차 (시간 단위)
             file_extensions: 허용할 파일 확장자 목록 (기본: ['.png', '.jpg', '.jpeg'])
+            filename_filter: 파일명에 포함되어야 하는 문자열 필터 (기본: "downimage")
         """
         self.base_path = Path(base_path)
         self.time_tolerance = timedelta(hours=time_tolerance_hours)
         self.file_extensions = file_extensions or ['.png', '.jpg', '.jpeg']
+        self.filename_filter = filename_filter
 
         # 초기화 시 base_path 존재 여부 로깅
         logger.info(f"FileImageProvider initialized with base_path: {self.base_path}")
@@ -194,6 +197,9 @@ class FileImageProvider(ImageProvider):
             # 카메라 이름이 포함된 파일 검색
             pattern = f"*{camera_name}*{ext}"
             found = list(self.base_path.rglob(pattern))
+            # filename_filter가 설정된 경우 필터링
+            if self.filename_filter:
+                found = [f for f in found if self.filename_filter in f.name]
             matching_files.extend(found)
             logger.debug(f"[{bay_id}] Pattern '{pattern}': found {len(found)} files")
 
@@ -222,11 +228,16 @@ class FileImageProvider(ImageProvider):
         return self._load_image_file(best_file, camera_name, bay_id, reference_time)
 
     def _collect_image_files(self, directory: Path) -> List[Path]:
-        """디렉토리에서 이미지 파일 목록 수집"""
+        """디렉토리에서 이미지 파일 목록 수집 (filename_filter 적용)"""
         image_files = []
         for ext in self.file_extensions:
             image_files.extend(directory.glob(f"*{ext}"))
             image_files.extend(directory.glob(f"*{ext.upper()}"))
+
+        # filename_filter가 설정된 경우 필터링
+        if self.filename_filter:
+            image_files = [f for f in image_files if self.filename_filter in f.name]
+
         return image_files
 
     def _find_closest_image(
@@ -315,8 +326,8 @@ class FileImageProvider(ImageProvider):
             bay_id=bay_id,
             image_data=image_data,
             captured_at=captured_at,
+            source_path=str(file_path),
             metadata={
-                "source_file": str(file_path),
                 "capture_method": "file",
             },
         )

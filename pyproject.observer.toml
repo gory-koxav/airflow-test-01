@@ -1,0 +1,36 @@
+[project]
+name = "airflow-observer"
+version = "1.0.0"
+description = "Airflow Observer Worker - GPU + ML packages for AI inference"
+requires-python = ">=3.12"
+dependencies = [
+    # Core ML
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
+    "torchaudio>=2.9.0",
+    "ultralytics>=8.3.200",
+    "segment-anything",
+
+    # Image processing (headless for container)
+    "opencv-python-headless>=4.12.0",
+    "pillow>=12.0.0",
+
+    # Scientific computing
+    "numpy>=2.2.0",
+    "scipy>=1.16.0",
+    "matplotlib>=3.10.0",
+    "polars>=1.36.0",
+    "shapely>=2.1.0",
+
+    # ONVIF camera access
+    "onvif-zeep>=0.2.12",
+
+    # Utilities
+    "requests>=2.32.0",
+    "pyyaml>=6.0.0",
+    "python-dotenv>=1.2.0",
+    "psutil>=7.1.0",
+]
+
+[tool.uv.sources]
+segment-anything = { git = "https://github.com/facebookresearch/segment-anything.git" }
