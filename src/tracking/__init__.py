@@ -9,6 +9,7 @@ Components:
 - BlockTracker: 개별 블록 상태 관리
 - EventLogger: 이벤트 기록
 - models: Tracking 관련 데이터 모델
+- logic: 순수 비즈니스 로직 함수 (Airflow 독립)
 """
 
 from .models import (
@@ -23,8 +24,10 @@ from .models import (
 from .block_tracker import BlockTracker
 from .event_logger import EventLogger
 from .tracking_service import TrackingService
+from .logic import TrackingRunResult, run_tracking
 
 __all__ = [
+    # Models
     "BlockState",
     "EventType",
     "AssembleState",
@@ -32,7 +35,11 @@ __all__ = [
     "BBox",
     "TrackingEvent",
     "CSVDetection",
+    # Services
     "BlockTracker",
     "EventLogger",
     "TrackingService",
+    # Pure Logic Functions
+    "TrackingRunResult",
+    "run_tracking",
 ]

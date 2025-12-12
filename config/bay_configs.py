@@ -185,7 +185,7 @@ BAY_CONFIGS: Dict[str, Dict[str, Any]] = {
 
         # === 스케줄링 설정 ===
         "schedule": {
-            "observation": "*/10 * * * *",  # 10분마다
+            "observation": "5-59/10 * * * *",  # 5분 기준 10분마다 (5분, 15분, 25분, 35분, 45분, 55분)
             "fusion": None,  # Trigger 기반
             "tracking": None,  # Trigger 기반
         },
@@ -359,3 +359,57 @@ def get_image_provider_config(bay_id: str) -> Dict[str, Any]:
     provider_config = config.get("image_provider_config", {}).copy()
     provider_config["base_path"] = get_nfs_image_path(bay_id)
     return provider_config
+
+
+# =============================================================================
+# 유지보수 설정
+# =============================================================================
+
+MAINTENANCE_CONFIG = {
+    "data_retention": {
+        # 파일 타입별 보관 기간 (일 단위)
+        "pkl_files": 3,
+        "json_files": 7,
+        "image_files": 365,  # 원본 이미지 1년 보관
+
+        # 모듈별 결과물 보관 기간
+        "observation_results": 7,
+        "fusion_results": 7,
+        "tracking_results": 30,  # 추적 이력은 길게 보관
+    },
+
+    "log_retention": {
+        "airflow_task_logs": 30,
+        "airflow_scheduler_logs": 7,
+        "celery_worker_logs": 7,
+    },
+
+    # 스케줄 설정
+    "schedules": {
+        "data_cleanup": "0 2 * * 0",    # 매주 일요일 2AM
+        "log_cleanup": "0 3 * * *",     # 매일 3AM
+    },
+
+    # 안전 장치
+    "safety": {
+        "min_free_space_gb": 10,  # 최소 여유 공간 (GB)
+        "dry_run": False,          # True면 삭제하지 않고 로그만
+    },
+}
+
+
+def get_maintenance_config() -> Dict[str, Any]:
+    """유지보수 설정 반환 (환경별 오버라이드 가능)"""
+    config = MAINTENANCE_CONFIG.copy()
+
+    # 환경 변수로 오버라이드 (선택적)
+    if pkl_days := os.getenv("MAINTENANCE_PKL_RETENTION_DAYS"):
+        config["data_retention"]["pkl_files"] = int(pkl_days)
+
+    if log_days := os.getenv("MAINTENANCE_LOG_RETENTION_DAYS"):
+        config["log_retention"]["airflow_task_logs"] = int(log_days)
+
+    if dry_run := os.getenv("MAINTENANCE_DRY_RUN"):
+        config["safety"]["dry_run"] = dry_run.lower() in ("true", "1", "yes")
+
+    return config

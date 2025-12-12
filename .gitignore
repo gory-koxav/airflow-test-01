@@ -16,6 +16,9 @@ wheels/
 .env.local
 .env.production
 
+# backup files
+.bak
+
 logs
 data
 scripts

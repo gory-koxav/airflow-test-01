@@ -79,6 +79,9 @@ x-airflow-worker:
     # Custom config file path
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
 
+    # Python path for module imports
+    PYTHONPATH: ${PYTHONPATH:-/opt/airflow:/opt/airflow/src}
+
     # Note: Dependencies are installed directly into Airflow's Python environment
     # via "uv pip install --system" in Dockerfile, so no venv PATH override needed
 
