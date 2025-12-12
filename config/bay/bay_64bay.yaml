@@ -1,0 +1,482 @@
+# =============================================================================
+# Bay Configuration: 64bay
+# =============================================================================
+# 64Bay Zone 설정 파일
+#
+# 이 파일은 Observer 워커에 배포됩니다.
+# 각 Observer 워커는 자신의 Bay 설정만 로드합니다.
+#
+# 환경변수:
+#   - AIRFLOW_BAY_CONFIG_PATH: 이 파일의 경로
+#   - CAMERA_PASSWORD: 카메라 비밀번호 (보안)
+# =============================================================================
+
+
+# =============================================================================
+# DEPLOYMENT (배포 설정)
+# =============================================================================
+deployment:
+  # Bay 식별자 (DAG/Queue 이름에 사용)
+  bay_id: "64bay"
+  # Bay 설명
+  description: "64Bay Zone"
+  # 활성화 여부
+  enabled: true
+
+  # 네트워크 설정
+  network:
+    # 카메라 서브넷
+    camera_subnet: "10.150.161.0/24"
+    # Observer 서버 IP
+    observer_ip: "10.150.161.1"
+
+  # 스케줄 설정 (Airflow Cron 표현식)
+  schedule:
+    # Observation DAG 스케줄 (5분 기준 10분마다: 5분, 15분, 25분, 35분, 45분, 55분)
+    observation: "5-59/10 * * * *"
+    # Fusion DAG 스케줄 (None이면 Trigger 기반)
+    fusion: null
+    # Tracking DAG 스케줄 (None이면 Trigger 기반)
+    tracking: null
+
+  # 운영 시간 [(start_h, start_m, end_h, end_m), ...]
+  operating_hours:
+    - [0, 0, 23, 59]  # 24시간 운영
+
+  # 스킵 시간 [(skip_h, skip_m, tolerance), ...]
+  skip_times: []
+
+
+# =============================================================================
+# FACTORY (공장 설정)
+# =============================================================================
+factory:
+  bay: 64
+  # Bay 열 식별자 (D열, E열)
+  bay_column: ["D", "E"]
+  # 컬럼 번호 -> 인덱스 매핑
+  column2idx:
+    4: 0
+    6: 1
+    7: 2
+    10: 3
+    12: 4
+    14: 5
+  # 공장 너비 (미터)
+  width: 200
+  # 공장 높이 (미터)
+  height: 32.2
+  # D열 높이 오프셋
+  offset_height_sub_1: 4.5
+  # E열 높이 오프셋
+  offset_height_sub_2: -4.5
+  # D열 팬 오프셋
+  offset_pan_sub_1: 180
+  # E열 팬 오프셋
+  offset_pan_sub_2: 0
+  # 틸트 오프셋
+  offset_tilt: 42
+  # 컬럼 오프셋
+  offset_column: 5
+  # 카메라 높이 (미터)
+  camera_height: 19
+
+
+# =============================================================================
+# CAMERA (카메라 설정)
+# =============================================================================
+camera:
+  # 이미지 해상도
+  resolution_x: 1920
+  resolution_y: 1080
+
+  # 카메라 내부 파라미터 (Intrinsic Parameters)
+  intrinsic:
+    focal_x: 1450.0  # fx
+    focal_y: 1451.0  # fy
+    center_x: 979.0  # cx (주점 x좌표)
+    center_y: 576.0  # cy (주점 y좌표)
+    # 왜곡 계수 (방사형 왜곡 k1, k2, 접선 왜곡 p1, p2, 방사형 왜곡 k3)
+    dist_coeffs: [-0.29, 0.1, -0.001, 0, 0]
+
+  # 카메라 제어 설정
+  control:
+    pan_step_ratio: 0.8
+    tilt_step_ratio: 1.0
+    zoom_factor: 30
+
+  # 카메라 이름 목록
+  camera_list:
+    - "NS6130Y2310S032"
+    - "NS6130Y2310S033"
+    - "NS6130Y2310S034"
+    - "NS6130Y2310S035"
+    - "NS6130Y2310S036"
+    - "NS6130Y2310S037"
+    - "NS6130Y2307S012"
+    - "NS6130Y2310S027"
+    - "NS6130Y2310S028"
+    - "NS6130Y2310S029"
+    - "NS6130Y2310S030"
+    - "NS6130Y2310S031"
+
+  # 개별 카메라 설정
+  RAW:
+    NS6130Y2310S032:
+      bay: 64
+      column: D04
+      connection:
+        host: "10.150.161.221"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [20, 36.7, 19]     # [x, fac_height+offset, camera_height]
+        offset_pan: 177
+        offset_tilt: 41.5
+      up:
+        pan: 1720
+        tilt: 350
+        zoom: 10
+      down:
+        pan: 1720
+        tilt: 550
+        zoom: 10
+
+    NS6130Y2310S033:
+      bay: 64
+      column: D06
+      connection:
+        host: "10.150.161.225"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [51, 36.7, 19]
+        offset_pan: 176.7
+        offset_tilt: 43.2
+      up:
+        pan: 1710
+        tilt: 370
+        zoom: 10
+      down:
+        pan: 1780
+        tilt: 550
+        zoom: 10
+
+    NS6130Y2310S034:
+      bay: 64
+      column: D07
+      connection:
+        host: "10.150.161.224"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [69, 36.7, 19]
+        offset_pan: 180
+        offset_tilt: 43
+      up:
+        pan: 1820
+        tilt: 360
+        zoom: 10
+      down:
+        pan: 1820
+        tilt: 510
+        zoom: 10
+
+    NS6130Y2310S035:
+      bay: 64
+      column: D10
+      connection:
+        host: "10.150.161.222"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [110, 36.7, 19]
+        offset_pan: 183
+        offset_tilt: 42
+      up:
+        pan: 1780
+        tilt: 350
+        zoom: 10
+      down:
+        pan: 1820
+        tilt: 540
+        zoom: 10
+
+    NS6130Y2310S036:
+      bay: 64
+      column: D12
+      connection:
+        host: "10.150.161.226"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [145, 36.7, 19]
+        offset_pan: 180
+        offset_tilt: 43.5
+      up:
+        pan: 1750
+        tilt: 340
+        zoom: 10
+      down:
+        pan: 1750
+        tilt: 520
+        zoom: 10
+
+    NS6130Y2310S037:
+      bay: 64
+      column: D14
+      connection:
+        host: "10.150.161.227"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [175, 36.7, 19]
+        offset_pan: 177.3
+        offset_tilt: 42
+      up:
+        pan: 1760
+        tilt: 340
+        zoom: 10
+      down:
+        pan: 1750
+        tilt: 520
+        zoom: 10
+
+    NS6130Y2307S012:
+      bay: 64
+      column: E04
+      connection:
+        host: "10.150.161.183"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [20, -4.5, 19]
+        offset_pan: -1
+        offset_tilt: 36
+      up:
+        pan: 1730
+        tilt: 350
+        zoom: 10
+      down:
+        pan: 1730
+        tilt: 560
+        zoom: 10
+
+    NS6130Y2310S027:
+      bay: 64
+      column: E06
+      connection:
+        host: "10.150.161.209"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [50, -4.5, 19]
+        offset_pan: -1
+        offset_tilt: 35.2
+      up:
+        pan: 1750
+        tilt: 370
+        zoom: 10
+      down:
+        pan: 1750
+        tilt: 540
+        zoom: 10
+
+    NS6130Y2310S028:
+      bay: 64
+      column: E07
+      connection:
+        host: "10.150.161.194"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [68.5, -4.5, 19]
+        offset_pan: 4.6
+        offset_tilt: 42
+      up:
+        pan: 1870
+        tilt: 320
+        zoom: 10
+      down:
+        pan: 1850
+        tilt: 490
+        zoom: 10
+
+    NS6130Y2310S029:
+      bay: 64
+      column: E10
+      connection:
+        host: "10.150.161.193"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [110, -4.5, 19]
+        offset_pan: -2
+        offset_tilt: 42
+      up:
+        pan: 1730
+        tilt: 380
+        zoom: 10
+      down:
+        pan: 1730
+        tilt: 560
+        zoom: 10
+
+    NS6130Y2310S030:
+      bay: 64
+      column: E12
+      connection:
+        host: "10.150.161.184"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [147, -4.5, 19]
+        offset_pan: -2
+        offset_tilt: 42
+      up:
+        pan: 1730
+        tilt: 400
+        zoom: 10
+      down:
+        pan: 1730
+        tilt: 550
+        zoom: 10
+
+    NS6130Y2310S031:
+      bay: 64
+      column: E14
+      connection:
+        host: "10.150.161.211"
+        port: 80
+        username: "admin"
+      extrinsic:
+        translation: [178, -4.5, 19]
+        offset_pan: -10
+        offset_tilt: 40
+      up:
+        pan: 1759
+        tilt: 357
+        zoom: 10
+      down:
+        pan: 1759
+        tilt: 540
+        zoom: 10
+
+
+# =============================================================================
+# FACTORY LAYOUT (공장 레이아웃)
+# =============================================================================
+# 64bay는 12bay와 동일한 레이아웃 사용
+factory_layout:
+  width: 150
+  height: 40
+  vertical_center: 20
+  areas:
+    # WEST SUBBAYS
+    A25:
+      top_left: [2, 0]
+      bottom_right: [18, 20]
+    A26:
+      top_left: [18, 0]
+      bottom_right: [29, 20]
+    A12:
+      top_left: [29, 0]
+      bottom_right: [44, 20]
+    A12_S:
+      top_left: [29, 0]
+      bottom_right: [36.5, 20]
+    A12_N:
+      top_left: [36.5, 0]
+      bottom_right: [44, 20]
+    A13:
+      top_left: [44, 0]
+      bottom_right: [59, 20]
+    A13_W:
+      top_left: [44, 0]
+      bottom_right: [59, 10]
+    A13_E:
+      top_left: [44, 10]
+      bottom_right: [59, 20]
+    A14:
+      top_left: [59, 0]
+      bottom_right: [77, 20]
+    A14_S:
+      top_left: [59, 0]
+      bottom_right: [67, 20]
+    A14_N:
+      top_left: [67, 0]
+      bottom_right: [77, 20]
+    "-":
+      top_left: [77, 0]
+      bottom_right: [86, 20]
+    A1D:
+      top_left: [86, 0]
+      bottom_right: [100, 20]
+    A1E:
+      top_left: [100, 0]
+      bottom_right: [115, 20]
+    A1F:
+      top_left: [115, 0]
+      bottom_right: [131, 20]
+    A1G:
+      top_left: [131, 0]
+      bottom_right: [147, 20]
+    # EAST SUBBAYS
+    A27:
+      top_left: [2, 20]
+      bottom_right: [18, 40]
+    A28:
+      top_left: [18, 20]
+      bottom_right: [29, 40]
+    A11:
+      top_left: [29, 20]
+      bottom_right: [44, 40]
+    A11_W:
+      top_left: [29, 20]
+      bottom_right: [44, 30]
+    A11_E:
+      top_left: [29, 30]
+      bottom_right: [44, 40]
+    A17:
+      top_left: [44, 20]
+      bottom_right: [60, 40]
+    "A18(T/O)":
+      top_left: [60, 20]
+      bottom_right: [82, 40]
+    A19:
+      top_left: [82, 20]
+      bottom_right: [97, 40]
+    A1A:
+      top_left: [97, 20]
+      bottom_right: [116, 40]
+    A1B:
+      top_left: [116, 20]
+      bottom_right: [131, 40]
+    A1B_W:
+      top_left: [116, 20]
+      bottom_right: [131, 30]
+    A1B_E:
+      top_left: [116, 30]
+      bottom_right: [131, 40]
+    A1C:
+      top_left: [131, 20]
+      bottom_right: [147, 40]
+
+
+# =============================================================================
+# TRACKING (추적 설정)
+# =============================================================================
+tracking:
+  iomin_threshold: 0.6
+  contour_min_distance: 5.0
+  exit_confirmation_threshold: 0.49
+  hbeam_jig_subbays:
+    - "A1D"
+    - "A1E"
+    - "A1F"
+    - "A1G"
+  ignore_subbays:
+    - "A18(T/O)"
+    - "-"
+    - "OB"
+    - "UNKNOWN"

@@ -15,11 +15,11 @@ Bay별 Observation DAG를 동적으로 생성합니다.
 from airflow import DAG
 from airflow.providers.standard.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime, timedelta
-from typing import Dict, Any
 import logging
 
-from config.bay_configs import (
-    get_enabled_bays,
+from config.settings import (
+    BaySetting,
+    get_enabled_bay_settings,
     get_observer_queue,
     get_image_provider_config,
 )
@@ -32,7 +32,7 @@ from dags.observation.tasks import (
 logger = logging.getLogger(__name__)
 
 
-def create_observation_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
+def create_observation_dag(bay_id: str, bay_setting: BaySetting) -> DAG:
     """
     Observation DAG 생성 - 카메라 캡처 및 AI 추론
 
@@ -40,7 +40,7 @@ def create_observation_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
 
     Args:
         bay_id: Bay 식별자
-        config: Bay 설정
+        bay_setting: Bay 설정 (Pydantic 모델)
 
     Returns:
         DAG: Observation DAG 인스턴스
@@ -58,22 +58,26 @@ def create_observation_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
 
     dag = DAG(
         dag_id=dag_id,
-        description=f'{config["description"]} - CCTV Observation',
+        description=f'{bay_setting.deployment.description} - CCTV Observation',
         default_args=default_args,
-        schedule=config["schedule"]["observation"],
+        schedule=bay_setting.deployment.schedule.observation,
         start_date=datetime(2025, 1, 1),
         catchup=False,
         max_active_runs=1,
         tags=['observation', bay_id, 'cctv', 'observer'],
     )
 
+    # operating_hours, skip_times 변환 (리스트 -> 튜플)
+    operating_hours = [tuple(oh) for oh in bay_setting.deployment.operating_hours]
+    skip_times = [tuple(st) for st in bay_setting.deployment.skip_times]
+
     with dag:
         # Task 1: 이미지 캡처
         # TaskFlow API: .override()로 queue 설정
         capture_result = capture_images_task.override(queue=observer_queue)(
             bay_id=bay_id,
-            cameras=config["cameras"],
-            image_provider_type=config["image_provider"],
+            cameras=bay_setting.camera.get_cameras_for_airflow(),
+            image_provider_type="file",  # 기본값, 환경에 따라 변경 가능
             image_provider_config=get_image_provider_config(bay_id),
         )
 
@@ -81,15 +85,14 @@ def create_observation_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
         should_proceed = check_should_proceed_task.override(queue=observer_queue)(
             capture_result=capture_result,
             bay_id=bay_id,
-            operating_hours=config["operating_hours"],
-            skip_times=config["skip_times"],
+            operating_hours=operating_hours,
+            skip_times=skip_times,
         )
 
         # Task 3: AI 추론 및 결과 저장
         inference_result = run_inference_task.override(queue=observer_queue)(
             capture_result=capture_result,
             bay_id=bay_id,
-            models=config.get("models", {}),
         )
 
         # Task 4: Fusion DAG 트리거 (Classic Operator 유지)
@@ -119,5 +122,5 @@ def create_observation_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
 # =============================================================================
 
 # 활성화된 Bay에 대해 Observation DAG 생성
-for bay_id, config in get_enabled_bays().items():
-    globals()[f"observation_{bay_id}_dag"] = create_observation_dag(bay_id, config)
+for bay_id, bay_setting in get_enabled_bay_settings().items():
+    globals()[f"observation_{bay_id}_dag"] = create_observation_dag(bay_id, bay_setting)

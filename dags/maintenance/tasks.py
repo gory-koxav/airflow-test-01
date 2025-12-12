@@ -6,7 +6,7 @@ Maintenance Tasks
 """
 
 from airflow.sdk import task
-from config.bay_configs import get_maintenance_config
+from config.settings import get_maintenance_config
 from datetime import datetime, timedelta
 import os
 import glob

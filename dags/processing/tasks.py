@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 @task(task_id='process_fusion')
 def process_fusion_task(
     bay_id: str,
-    config: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
     Fusion 처리 Task
@@ -29,14 +28,42 @@ def process_fusion_task(
     실행 위치: Main Server Host의 Processor
 
     다중 카메라 데이터를 융합하여 블록의 공간 정보를 분석합니다.
+    설정은 config.settings에서 자동으로 로드됩니다.
     """
     from airflow.sdk import get_current_context
     from src.fusion import run_fusion
+    from config.settings import get_setting, get_bay_setting
 
     # dag_run.conf에서 batch_id 가져오기
     context = get_current_context()
     dag_run_conf = context['dag_run'].conf
     batch_id = dag_run_conf.get('batch_id')
+
+    # 설정 로드
+    setting = get_setting()
+    bay_setting = get_bay_setting(f"config/bay/bay_{bay_id}.yaml")
+
+    # config 구성 (기존 run_fusion 인터페이스 호환)
+    camera = bay_setting.camera
+    config = {
+        "projection": {
+            "camera_intrinsics": {
+                "fx": camera.intrinsic.focal_x,
+                "fy": camera.intrinsic.focal_y,
+                "cx": camera.intrinsic.center_x,
+                "cy": camera.intrinsic.center_y,
+            },
+            "target_classes": setting.target.classes.projection,
+        },
+        "camera_extrinsics": {
+            name: {
+                "R": camera.get_extrinsic(name)["R"],
+                "t": camera.get_extrinsic(name)["t"],
+            }
+            for name in camera.camera_list
+            if camera.get_extrinsic(name)
+        },
+    }
 
     # 순수 로직 호출
     result = run_fusion(

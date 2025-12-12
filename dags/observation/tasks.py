@@ -96,17 +96,28 @@ def check_should_proceed_task(
 def run_inference_task(
     capture_result: Dict[str, Any],
     bay_id: str,
-    models: Dict[str, str],
 ) -> Dict[str, Any]:
     """
     AI 추론 및 결과 저장 Task
 
     실행 위치: Bay 물리 서버의 Observer
+
+    모델 경로는 config.settings.PathSetting에서 자동으로 로드됩니다.
     """
     from src.observation import run_inference
+    from config.settings import get_setting
 
     batch_id = capture_result['batch_id']
     captured_images_metadata = capture_result.get('captured_images_metadata', [])
+
+    # 설정에서 모델 경로 로드
+    setting = get_setting()
+    models = {
+        "yolo_detection": str(setting.path.yolo_od_ckpt),
+        "sam_segmentation": str(setting.path.sam_ckpt),
+        "sam_yolo_cls": str(setting.path.yolo_cls_ckpt),
+        "assembly_cls": str(setting.path.yolo_asbl_ckpt),
+    }
 
     # 순수 로직 호출
     result = run_inference(

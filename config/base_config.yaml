@@ -1,0 +1,164 @@
+# =============================================================================
+# Base Configuration (공통 설정)
+# =============================================================================
+# 이 파일은 모든 Bay에서 공유하는 공통 설정입니다.
+# Bay별 설정(스케줄, 카메라 등)은 config/bay/bay_*.yaml 파일에서 관리합니다.
+#
+# 환경변수 오버라이드:
+#   - AIRFLOW_CONFIG_PATH: 이 파일의 경로 오버라이드
+#   - AIRFLOW_BAY_CONFIG_PATH: Bay 설정 파일 경로 오버라이드
+# =============================================================================
+
+# Bay 설정 파일 경로 (기본값, 워커별로 환경변수로 오버라이드)
+bay_config_path: "config/bay/bay_12bay-west.yaml"
+
+
+# =============================================================================
+# PATH SETTINGS (경로 설정)
+# =============================================================================
+path:
+  # 모델/출력 파일의 기본 경로
+  base: /opt/airflow/data
+  # 원본 이미지가 저장된 경로
+  image_data: /opt/airflow/data/NFS_images
+
+  # -------------------- CHECKPOINT -------------------- #
+  # None으로 설정하면 base 경로 기준으로 자동 resolve
+  # SAM checkpoint 경로
+  sam_ckpt: null
+  # SAM으로 분할된 이미지를 분류 YOLO Checkpoint 경로
+  yolo_cls_ckpt: null
+  # 객체 탐지 YOLO Checkpoint 경로
+  yolo_od_ckpt: null
+  # Assembly 분류 YOLO Checkpoint 경로
+  yolo_asbl_ckpt: null
+
+  # ---------------------- RESULT ---------------------- #
+  # None으로 설정하면 base/output 경로 기준으로 자동 resolve
+  sam_output: null
+  boundary_output: null
+  projection_output: null
+  visualize_output: null
+  compensator_output: null
+
+
+# =============================================================================
+# MODEL SETTINGS (모델 설정)
+# =============================================================================
+model:
+  sam:
+    # 사용할 SAM 모델의 타입 (예: "vit_h", "vit_l", "vit_b")
+    type: "vit_h"
+    # SAM으로 지그류를 탐지 가능성을 높이기 위해 이미지 상단을 회색으로 채우는 비율
+    cutoff_pct_top: 0
+    # SAM으로 지그류를 탐지 가능성을 높이기 위해 이미지 하단을 회색으로 채우는 비율
+    cutoff_pct_bot: 0
+
+  # 추론 파이프라인 설정
+  pipeline:
+    - name: YOLOObjectDetector
+      module: observation.inference.strategies
+      # args:
+    - name: AutomaticSegmenter
+      module: observation.inference.strategies
+      # args:
+    - name: MaskClassifier
+      module: observation.inference.strategies
+      # args:
+    - name: SAMObjectBoundarySegmenter
+      module: observation.inference.strategies
+      # args:
+    # - name: MockAssemblyClassifier
+    #   module: observation.inference.strategies
+    #   args:
+    # - name: SamPinjigSegmenter
+    #   module: observation.inference.strategies
+    #   args:
+
+
+# =============================================================================
+# ALGORITHM SETTINGS (알고리즘 설정)
+# =============================================================================
+algorithm:
+  compensator:
+    block_height:
+      # 이미지 높이의 최소 비율 (20%)
+      min_height_ratio: 0.2
+      # 이미지 높이의 최대 비율 (80%)
+      max_height_ratio: 0.80
+      # 조정 후 최소 높이 비율 (40%)
+      adjust_min_height_ratio: 0.4
+      # 조정 후 최대 높이 비율 (95%)
+      adjust_max_height_ratio: 0.95
+      # 이미지 너비의 최소 비율 (5%)
+      min_width_ratio: 0.05
+      # 이미지 너비의 최대 비율 (95%)
+      max_width_ratio: 0.95
+      # 좌우 마진 비율 (20%)
+      side_margin_ratio: 0.2
+      # 너비 조건 충족 시 좌우 마진 비율 (10%)
+      width_margin_ratio: 0.1
+
+  result:
+    threshold:
+      # 블록 마스크와 객체 Bbox의 겹침 비율 임계값
+      # (겹침 영역 넓이 / 객체 Bbox 넓이)
+      overlap_object: 0.5
+      # 블록 마스크와 AR 마커 Bbox의 겹침 비율 임계값
+      # (겹침 영역 넓이 / AR 마커 Bbox 넓이)
+      overlap_ar: 0.9
+
+    visualize:
+      show_warped_image: true
+      show_object_boxes: true
+      show_boundary_masks: true
+      show_pinjig_masks: true
+      show_assembly_labels: true
+      dpi: 150
+      grid_interval: 5
+      mask_color: [255, 0, 0]   # RGB
+      mask_alpha: 0.4
+      pinjig_mask_alpha: 0.4
+      box_color: 'magenta'
+      box_linewidth: 1.5
+
+
+# =============================================================================
+# TARGET SETTINGS (대상 설정)
+# =============================================================================
+target:
+  classes:
+    # 경계선 탐지 대상 클래스
+    boundary:
+      - "panel"
+      - "block"
+      - "HP_block"
+    # 투영 대상 클래스
+    projection:
+      - "panel"
+      - "block"
+      - "HP_block"
+      - "crane"
+      - "grinder"
+      - "welder"
+      - "step_board"
+      - "pipe"
+    # 핀지그 대상 클래스
+    pinjig:
+      - "pinjig"
+      - "hbeamjig"
+      - "gridjig"
+      - "pinjig_empty"
+      - "gridjig_empty"
+      - "hbeamjig_empty"
+      - "flatjig_empty"
+
+  # 필터링할 클래스 (예: crane은 투영 결과에서 제외)
+  filter_classes: ["crane"]
+
+  # 블록과 매칭시킬 객체 클래스 및 결과 딕셔너리의 카운트 키 매핑
+  matching:
+    grinder: "matched_grids_counts"
+    welder: "matched_weld_counts"
+    step_board: "matched_step_boards_counts"
+    pipe: "matched_pipes_counts"

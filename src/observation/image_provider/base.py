@@ -1,60 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Image Provider 기본 클래스 및 데이터 모델
+Image Provider 기본 클래스
 
 Strategy Pattern의 추상 베이스 클래스를 정의합니다.
+CapturedImage는 src/observation/models.py에서 import합니다.
 """
 
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, field
-import numpy as np
+
+# CapturedImage를 models.py에서 import
+from src.observation.models import CapturedImage
 
 
-@dataclass
-class CapturedImage:
-    """
-    캡처된 이미지 데이터 모델
-
-    Attributes:
-        image_id: 고유 이미지 식별자 (bay_id + camera_name + timestamp)
-        camera_name: 카메라 이름 (예: "C_2", "D_11")
-        bay_id: Bay 식별자 (예: "12bay", "64bay")
-        image_data: 이미지 데이터 (numpy array, BGR 형식)
-        captured_at: 캡처 시간
-        source_path: 이미지 파일 경로 (XCom 직렬화용)
-        metadata: 추가 메타데이터 (선택적)
-    """
-    image_id: str
-    camera_name: str
-    bay_id: str
-    image_data: np.ndarray
-    captured_at: datetime
-    source_path: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self):
-        """이미지 데이터 유효성 검사"""
-        if self.image_data is None:
-            raise ValueError("image_data cannot be None")
-        if not isinstance(self.image_data, np.ndarray):
-            raise TypeError("image_data must be a numpy array")
-
-    @property
-    def shape(self) -> tuple:
-        """이미지 shape 반환"""
-        return self.image_data.shape
-
-    @property
-    def is_valid(self) -> bool:
-        """이미지가 유효한지 확인"""
-        return (
-            self.image_data is not None
-            and len(self.image_data.shape) >= 2
-            and self.image_data.shape[0] > 0
-            and self.image_data.shape[1] > 0
-        )
+# 하위 호환성을 위해 re-export
+__all__ = ['CapturedImage', 'ImageProvider']
 
 
 class ImageProvider(ABC):

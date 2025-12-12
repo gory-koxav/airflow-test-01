@@ -16,11 +16,11 @@ Bay별 Fusion/Tracking DAG를 동적으로 생성합니다.
 from airflow import DAG
 from airflow.providers.standard.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime, timedelta
-from typing import Dict, Any
 import logging
 
-from config.bay_configs import (
-    get_enabled_bays,
+from config.settings import (
+    BaySetting,
+    get_enabled_bay_settings,
     get_processor_queue,
 )
 from dags.processing.tasks import (
@@ -31,7 +31,7 @@ from dags.processing.tasks import (
 logger = logging.getLogger(__name__)
 
 
-def create_fusion_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
+def create_fusion_dag(bay_id: str, bay_setting: BaySetting) -> DAG:
     """
     Fusion DAG 생성 - 다중 카메라 융합 분석
 
@@ -39,7 +39,7 @@ def create_fusion_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
 
     Args:
         bay_id: Bay 식별자
-        config: Bay 설정
+        bay_setting: Bay 설정 (Pydantic 모델)
 
     Returns:
         DAG: Fusion DAG 인스턴스
@@ -57,7 +57,7 @@ def create_fusion_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
 
     dag = DAG(
         dag_id=dag_id,
-        description=f'{config["description"]} - Multi-Camera Fusion',
+        description=f'{bay_setting.deployment.description} - Multi-Camera Fusion',
         default_args=default_args,
         schedule=None,  # Trigger 기반
         start_date=datetime(2025, 1, 1),
@@ -70,7 +70,6 @@ def create_fusion_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
         # Task 1: Fusion 처리
         fusion_result = process_fusion_task.override(queue=processor_queue)(
             bay_id=bay_id,
-            config=config,
         )
 
         # Task 2: Tracking DAG 트리거 (Classic Operator 유지)
@@ -92,7 +91,7 @@ def create_fusion_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
     return dag
 
 
-def create_tracking_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
+def create_tracking_dag(bay_id: str, bay_setting: BaySetting) -> DAG:
     """
     Tracking DAG 생성 - 블록 이동 추적 및 기록
 
@@ -100,7 +99,7 @@ def create_tracking_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
 
     Args:
         bay_id: Bay 식별자
-        config: Bay 설정
+        bay_setting: Bay 설정 (Pydantic 모델)
 
     Returns:
         DAG: Tracking DAG 인스턴스
@@ -118,7 +117,7 @@ def create_tracking_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
 
     dag = DAG(
         dag_id=dag_id,
-        description=f'{config["description"]} - Tracking',
+        description=f'{bay_setting.deployment.description} - Tracking',
         default_args=default_args,
         schedule=None,  # Trigger 기반
         start_date=datetime(2025, 1, 1),
@@ -141,6 +140,6 @@ def create_tracking_dag(bay_id: str, config: Dict[str, Any]) -> DAG:
 # =============================================================================
 
 # 활성화된 Bay에 대해 Fusion/Tracking DAG 생성
-for bay_id, config in get_enabled_bays().items():
-    globals()[f"fusion_{bay_id}_dag"] = create_fusion_dag(bay_id, config)
-    globals()[f"tracking_{bay_id}_dag"] = create_tracking_dag(bay_id, config)
+for bay_id, bay_setting in get_enabled_bay_settings().items():
+    globals()[f"fusion_{bay_id}_dag"] = create_fusion_dag(bay_id, bay_setting)
+    globals()[f"tracking_{bay_id}_dag"] = create_tracking_dag(bay_id, bay_setting)

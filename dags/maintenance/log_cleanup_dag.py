@@ -7,7 +7,7 @@ Log Cleanup DAG
 
 from airflow import DAG
 from datetime import datetime, timedelta
-from config.bay_configs import get_maintenance_config
+from config.settings import get_maintenance_config
 from dags.maintenance.tasks import cleanup_old_logs
 
 
